@@ -37,7 +37,7 @@ class Button(Image):
 
         self.selected = False
 
-    def DrawText(self, surface, text, textColor, textPosition, font) -> None:
+    def DrawText(self, surface: pygame.Surface, text: str, textColor: tuple, textPosition: tuple, font: pygame.font.Font) -> None:
 
         text = font.render(text, False, textColor)
         surface.blit(text, textPosition)

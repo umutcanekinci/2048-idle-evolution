@@ -25,7 +25,7 @@ class Building(Image):
     def GetImagePath(self) -> str:
         return ImagePath("level" + str(self.level), "buildings")
 
-    def SetSize(self):
+    def SetSize(self) -> None:
 
         if self.level == 1 or self.level == 2:
             self.floorCount = 1
@@ -58,11 +58,11 @@ class Building(Image):
         direction = self.targetPosition - self.position # This vector points from the mouse pos to the target.
         self.velocity = direction.normalize() * 8 # The velocity is the normalized direction vector scaled to the desired length.
 
-    def LevelUp(self, sacrificialBuilding):
+    def LevelUp(self, sacrificialBuilding) -> None:
         sacrificialBuilding.SetTargetTile(self.tile)
         sacrificialBuilding.Destroy(self)
 
-    def Destroy(self, newBuilding):
+    def Destroy(self, newBuilding) -> None:
         self.newBuilding = newBuilding
         self.destroy = True
 

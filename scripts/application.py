@@ -246,24 +246,6 @@ class Application():
 								self.PlaySound("click")
 								self.Exit()
 
-					elif event.type == pygame.MOUSEBUTTONUP:
-
-						#-# Control click button events with mouse #-#
-						if self.mainMenu.buttons[0].selected:
-
-							self.PlaySound("click")
-							self.OpenTab("game")
-
-						elif self.mainMenu.buttons[1].selected:
-
-							self.PlaySound("click")
-							self.OpenTab("settings")
-
-						elif self.mainMenu.buttons[2].selected:
-
-							self.PlaySound("click")
-							self.Exit()
-
 						#-# Change the selected button with keys #-#
 						elif event.key == pygame.K_w or event.key == pygame.K_UP:
 
@@ -274,7 +256,7 @@ class Application():
 								self.mainMenu.buttons[2].selected = False
 								self.PlaySound("up")
 
-							elif self.exitButton.selected:
+							elif self.mainMenu.buttons[2].selected:
 
 								self.mainMenu.buttons[1].selected = True
 								self.mainMenu.buttons[0].selected = False
@@ -296,6 +278,24 @@ class Application():
 								self.mainMenu.buttons[0].selected = False
 								self.mainMenu.buttons[2].selected = False
 								self.PlaySound("down")
+
+					elif event.type == pygame.MOUSEBUTTONUP:
+
+						#-# Control click button events with mouse #-#
+						if self.mainMenu.buttons[0].isMouseOver(self.mousePosition):
+
+							self.PlaySound("click")
+							self.OpenTab("game")
+
+						elif self.mainMenu.buttons[1].isMouseOver(self.mousePosition):
+
+							self.PlaySound("click")
+							self.OpenTab("settings")
+
+						elif self.mainMenu.buttons[2].isMouseOver(self.mousePosition):
+
+							self.PlaySound("click")
+							self.Exit()
 
 				elif self.tab == "settings":
 					pass

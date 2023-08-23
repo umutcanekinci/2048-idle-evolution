@@ -380,7 +380,7 @@ class Application():
 			#-# Draw Everything #-#
 			self.Draw()
 
-	def OpenBuildingInfo(self, building: Building):
+	def OpenBuildingInfo(self, building: Building) -> None:
 
 		self.closeInfoButton = Button("red_circle", ((self.windowWidth - 250)/2 + 250 - 20, (self.windowHeight - 400)/2 - 12), selectedColor="yellow_circle")
 		self.closeInfoButtonCross = Button("grey_crossWhite", (9, 9), ((self.windowWidth - 250)/2 + 250 - 20 + 9, (self.windowHeight - 400)/2 - 12 + 9), "grey_crossGrey")
@@ -405,7 +405,7 @@ class Application():
 
 		self.isInfoPanelOpen = True
 
-	def MoveBuildings(self, rotation):
+	def MoveBuildings(self, rotation: str) -> None:
 
 		isBuildingsMoving = False
 
@@ -534,7 +534,7 @@ class Application():
 
 			self.buildings.sort(key=lambda building: building.tile.columnNumber)
 
-	def CreateBuilding(self):
+	def CreateBuilding(self) -> None:
 
 		isBuildingsMoving = False
 
@@ -573,7 +573,7 @@ class Application():
 
 				print("You need to create tiles before creating new building! lol")
 	
-	def OpenTab(self, tab):
+	def OpenTab(self, tab: str) -> None:
 
 		self.PlayCloudAnimation()
 		self.tab = tab
@@ -585,7 +585,7 @@ class Application():
 		elif tab == "game":
 			self.StartGame()
 
-	def PlayCloudAnimation(self):
+	def PlayCloudAnimation(self) -> None:
 
 		def CreateClouds():
 			for i in range(100):
@@ -604,7 +604,7 @@ class Application():
 		self.animationClouds = []
 		CreateClouds()
 
-	def OpenMainMenu(self):
+	def OpenMainMenu(self) -> None:
 
 		buttonSize = (400, 60)
 		self.menuWidth, self.menuHeight = (440, 315)
@@ -613,7 +613,7 @@ class Application():
 		buttonTextPositions = [(140, 10), (110, 10), (160, 10)]
 		self.mainMenu = Menu(menuPosition, ImagePath("blue_button03", "gui"), (440, 70), self.windowTitle, White, self.buttonFont, (118, 15), ImagePath("grey_panel", "gui"), 3, buttonSize, "blue", "yellow", buttonTexts, White, Gray, buttonTextPositions, self.buttonFont)
 
-	def OpenSettings(self):
+	def OpenSettings(self) -> None:
 
 		buttonSize = (400, 60)
 		self.menuWidth, self.menuHeight = (440, 315)
@@ -622,7 +622,7 @@ class Application():
 		buttonTextPositions = [(140, 10), (110, 10), (160, 10)]
 		self.settingsMenu = Menu(menuPosition, ImagePath("blue_button03", "gui"), (440, 70), "Settings", White, self.buttonFont, (128, 15), ImagePath("grey_panel", "gui"), 0, buttonSize, "blue", "yellow", buttonTexts, White, Gray, buttonTextPositions, self.buttonFont)
 
-	def StartGame(self):
+	def StartGame(self) -> None:
 		
 		def CreatTiles(rowCount, columnCount):
 
@@ -669,7 +669,7 @@ class Application():
 		CreatTiles(self.rowCount, self.columnCount)
 		CreateGUI()
 
-	def Draw(self):
+	def Draw(self) -> None:
 
 		def FillBackgroundColor(color: tuple):
 			self.window.fill(color)

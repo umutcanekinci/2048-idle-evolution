@@ -28,12 +28,15 @@ class Application():
 		self.gameBackgorundColor = CustomBlue
 		self.menuBackgroundColor = Yellow
 		self.cloudCount = 10
-		self.rowCount, self.columnCount = 5, 5
+		self.rowCount = self.columnCount = 2
+		self.maxSize = 7
 		self.maxBuildingLevel = 6
 		self.startingMoney = 10000
-		self.buildCost = 100
-		self.ages = ["wood", "rock", "sand", "stone"]
-
+		
+		self.buildCost = lambda age: (age+1)*100
+		self.ageCost = lambda age: (age+1)*1000
+		self.expandCost = lambda x: (x+1)*1000
+		 
 		#-# FPS #-#
 		self.FPS = 165
 
@@ -45,7 +48,7 @@ class Application():
 		self.switchUpSoundPath = SoundPath("switchUp")
 		self.switchDownSoundPath = SoundPath("switchDown")
 		self.clickSoundPath = SoundPath("click")
-		self.backSoundPath = SoundPath("back")
+		self.goBackSoundPath = SoundPath("back")
 
 	def InitPygame(self) -> None:
 
@@ -78,20 +81,10 @@ class Application():
 		self.infoPanelTextFont = pygame.font.Font(self.fontPathThin, 15)
 		self.infoPanelButtonFont = pygame.font.Font(self.fontPathThin, 24)
 
-	def PlaySound(self, rotation: str) -> None:
+	def PlaySound(self, soundPath: SoundPath) -> None:
 
-		if rotation == "up":
-			mixer.music.load(self.switchUpSoundPath)
-			mixer.music.play()
-		elif rotation == "down":
-			mixer.music.load(self.switchDownSoundPath)
-			mixer.music.play()
-		elif rotation == "click":
-			mixer.music.load(self.clickSoundPath)
-			mixer.music.play()
-		elif rotation == "back":
-			mixer.music.load(self.backSoundPath)
-			mixer.music.play()
+		mixer.music.load(soundPath)
+		mixer.music.play()
 
 	def isThereSelectedTile(self) -> bool:
 
@@ -127,6 +120,35 @@ class Application():
 
 					tile.selected = False
 					tile.rect = tile.unselectedRect
+
+	def Expand(self) -> None:
+		
+		if self.rowCount < self.maxSize and self.columnCount < self.maxSize and self.money >= self.expandCost(self.rowCount):
+
+			self.money -= self.expandCost(self.rowCount)
+
+			self.rowCount = self.columnCount = self.rowCount+1
+			self.CreateTiles(self.rowCount, self.columnCount)
+
+			self.expandButton = Button("green", (300, 20), (320, 800), "red", "EXPAND", str(self.expandCost(self.rowCount)) + "$", White, White, (27, 10), (40, 12), self.buttonFont, (200, 60))
+
+	def SetAge(self, ageNumber) -> None:
+			
+		self.ageNumber = ageNumber
+		
+		for i in range(len(self.buildings)):
+			building = self.buildings[i]
+			self.buildings[i] = Building(building.level, self.ageNumber, building.tile)
+
+		self.buildButton = Button("green", (600, 20), (620, 800), "red", "BUILD", str(self.buildCost(self.ageNumber)) + "$", White, White, (50, 10), (60, 12), self.buttonFont, (200, 60))
+		self.nextAgeButton = Button("green", (900, 20), (920, 800), "red", "NEXT AGE", str(self.ageCost(self.ageNumber)) + "$", White, White, (12, 10), (45, 12), self.buttonFont, (200, 60))
+
+	def NextAge(self) -> None:
+
+		if self.ageNumber + 1 < len(ages) and self.money >= self.ageCost(self.ageNumber):
+			
+			self.SetAge(self.ageNumber + 1)
+			self.money -= self.ageCost(self.ageNumber)
 
 	def Exit(self) -> None:
 
@@ -169,7 +191,7 @@ class Application():
 				#-# Go back if escape button pressed #-#
 				elif event.type == pygame.KEYUP and event.key == pygame.K_ESCAPE:
 						
-					self.PlaySound("back")
+					self.PlaySound(self.goBackSoundPath)
 
 					if self.tab == "menu":
 
@@ -201,17 +223,17 @@ class Application():
 								self.mainMenu.buttons[0].selected = True
 								self.mainMenu.buttons[1].selected = False
 								self.mainMenu.buttons[2].selected = False
-								self.PlaySound("up")
+								self.PlaySound(self.switchUpSoundPath)
 
 						elif self.mainMenu.buttons[1].isMouseOver(self.mousePosition):
 
 							if self.mainMenu.buttons[0].selected:
 
-								self.PlaySound("down")
+								self.PlaySound(self.switchDownSoundPath)
 
 							elif self.mainMenu.buttons[2].selected:
 
-								self.PlaySound("up")
+								self.PlaySound(self.switchUpSoundPath)
 							
 							self.mainMenu.buttons[1].selected = True
 							self.mainMenu.buttons[0].selected = False
@@ -221,7 +243,7 @@ class Application():
 
 							if not self.mainMenu.buttons[2].selected:
 
-								self.PlaySound("down")
+								self.PlaySound(self.switchDownSoundPath)
 
 							self.mainMenu.buttons[2].selected = True
 							self.mainMenu.buttons[0].selected = False
@@ -234,17 +256,17 @@ class Application():
 
 							if self.mainMenu.buttons[0].selected:
 
-								self.PlaySound("click")
+								self.PlaySound(self.clickSoundPath)
 								self.OpenTab("game")
 
 							elif self.mainMenu.buttons[1].selected:
 
-								self.PlaySound("click")
+								self.PlaySound(self.clickSoundPath)
 								self.OpenTab("settings")
 
 							elif self.mainMenu.buttons[2].selected:
 
-								self.PlaySound("click")
+								self.PlaySound(self.clickSoundPath)
 								self.Exit()
 
 						#-# Change the selected button with keys #-#
@@ -255,14 +277,14 @@ class Application():
 								self.mainMenu.buttons[0].selected = True
 								self.mainMenu.buttons[1].selected = False
 								self.mainMenu.buttons[2].selected = False
-								self.PlaySound("up")
+								self.PlaySound(self.switchUpSoundPath)
 
 							elif self.mainMenu.buttons[2].selected:
 
 								self.mainMenu.buttons[1].selected = True
 								self.mainMenu.buttons[0].selected = False
 								self.mainMenu.buttons[2].selected = False
-								self.PlaySound("up")
+								self.PlaySound(self.switchUpSoundPath)
 								
 						elif event.key == pygame.K_s or event.key == pygame.K_DOWN:
 
@@ -271,31 +293,30 @@ class Application():
 								self.mainMenu.buttons[0].selected = False
 								self.mainMenu.buttons[1].selected = False
 								self.mainMenu.buttons[2].selected = True
-								self.PlaySound("down")
+								self.PlaySound(self.switchDownSoundPath)
 
 							elif self.mainMenu.buttons[0].selected:
 
 								self.mainMenu.buttons[1].selected = True
 								self.mainMenu.buttons[0].selected = False
 								self.mainMenu.buttons[2].selected = False
-								self.PlaySound("down")
+								self.PlaySound(self.switchDownSoundPath)
 
 					elif event.type == pygame.MOUSEBUTTONUP:
 
 						#-# Control click button events with mouse #-#
 						if self.mainMenu.buttons[0].isMouseOver(self.mousePosition):
 
-							self.PlaySound("click")
+							self.PlaySound(self.clickSoundPath)
 							self.OpenTab("game")
 
 						elif self.mainMenu.buttons[1].isMouseOver(self.mousePosition):
 
-							self.PlaySound("click")
+							self.PlaySound(self.clickSoundPath)
 							self.OpenTab("settings")
 
 						elif self.mainMenu.buttons[2].isMouseOver(self.mousePosition):
-
-							self.PlaySound("click")
+							self.PlaySound(self.goBackSoundPath)
 							self.Exit()
 
 				elif self.tab == "settings":
@@ -316,7 +337,9 @@ class Application():
 							self.ControlSelectingTile()
 						
 							#-# Select build button if mouse over it #-#
+							self.expandButton.selected = self.expandButton.isMouseOver(self.mousePosition)
 							self.buildButton.selected = self.buildButton.isMouseOver(self.mousePosition)
+							self.nextAgeButton.selected = self.nextAgeButton.isMouseOver(self.mousePosition)
 
 					elif event.type == pygame.MOUSEBUTTONUP:
 
@@ -328,18 +351,20 @@ class Application():
 								self.buildings.remove(self.infoBuilding)
 								self.money += self.infoBuilding.sellPrice
 								self.isInfoPanelOpen = False
+								self.PlaySound(self.goBackSoundPath)
 							
 							#-# close info panel #-#
 							elif self.closeInfoButton.selected:
 
 								self.isInfoPanelOpen = False
-
+								self.PlaySound(self.goBackSoundPath)
 						else:
 
 							#-# On/off info mode with clicking info mode button #-#
 							if self.infoModeTrueButton.isMouseOver(self.mousePosition):
 								
 								self.infoMode = not self.infoMode
+								self.PlaySound(self.clickSoundPath)
 
 							#-# Open building info if tile is clicked #-#
 							if self.infoMode:
@@ -354,13 +379,23 @@ class Application():
 												if building.tile == tile:
 
 													self.OpenBuildingInfo(building)
+													self.PlaySound(self.clickSoundPath)
+
 													break
 											break
 
+							elif self.expandButton.isMouseOver(self.mousePosition):
+								self.PlaySound(self.clickSoundPath)
+								self.Expand()
+
 							#-# Create building if build button clicked #-#
 							elif self.buildButton.isMouseOver(self.mousePosition):
-
+								self.PlaySound(self.clickSoundPath)
 								self.CreateBuilding()
+
+							elif self.nextAgeButton.isMouseOver(self.mousePosition):
+								self.PlaySound(self.clickSoundPath)
+								self.NextAge()
 
 					elif event.type == pygame.KEYUP:
 
@@ -368,14 +403,24 @@ class Application():
 						if not self.isInfoPanelOpen:
 
 							if event.key == pygame.K_SPACE and not self.infoMode:
+								
+								self.PlaySound(self.clickSoundPath)
 								self.CreateBuilding()
+							
 							elif event.key == pygame.K_RIGHT or event.key == pygame.K_d:
+							
 								self.MoveBuildings("right")
+							
 							elif event.key == pygame.K_LEFT or event.key == pygame.K_a:
+							
 								self.MoveBuildings("left")
+							
 							elif event.key == pygame.K_UP or event.key == pygame.K_w:
+							
 								self.MoveBuildings("up")
+							
 							elif event.key == pygame.K_DOWN or event.key == pygame.K_s:
+							
 								self.MoveBuildings("down")
 
 			#-# Draw Everything #-#
@@ -535,7 +580,7 @@ class Application():
 
 			self.buildings.sort(key=lambda building: building.tile.columnNumber)
 
-	def CreateBuilding(self) -> None:	
+	def CreateBuilding(self) -> None:
 
 		isBuildingsMoving = False
 
@@ -544,7 +589,7 @@ class Application():
 				isBuildingsMoving = True
 				break
 
-		if not isBuildingsMoving and self.money >= self.buildCost: #and not self.infoMode
+		if not isBuildingsMoving and self.money >= self.buildCost(self.ageNumber): #and not self.infoMode
 
 			try:
 				
@@ -554,6 +599,7 @@ class Application():
 					for columnNumber in range(self.columnCount):
 						emptyTiles.append((rowNumber + 1, columnNumber + 1))
 
+
 				for building in self.buildings:
 					emptyTiles.remove((building.tile.rowNumber, building.tile.columnNumber))
 
@@ -562,10 +608,10 @@ class Application():
 					
 					rowNumber, columnNumber = choice(emptyTiles)
 
-					newBuilding = Building(1, self.ages[self.age], self.tiles[rowNumber - 1][columnNumber - 1])
-					self.money -= self.buildCost
+					newBuilding = Building(1, self.ageNumber, self.tiles[rowNumber - 1][columnNumber - 1])
 					self.buildings.append(newBuilding)
 					self.buildings.sort(key=lambda building: building.tile.columnNumber)
+					self.money -= self.buildCost(self.ageNumber)
 					
 				else:
 					pass # not enough space error
@@ -623,22 +669,22 @@ class Application():
 		buttonTextPositions = [(140, 10), (110, 10), (160, 10)]
 		self.settingsMenu = Menu(menuPosition, ImagePath("blue_button03", "gui"), (440, 70), "Settings", White, self.buttonFont, (128, 15), ImagePath("grey_panel", "gui"), 0, buttonSize, "blue", "yellow", buttonTexts, White, Gray, buttonTextPositions, self.buttonFont)
 
+	def CreateTiles(self, rowCount, columnCount) -> None:
+
+		self.tiles = []
+
+		for rowNumber in range(rowCount):
+
+			row = []
+
+			for columnNumber in range(columnCount):
+				row.append(Tile(132, 99, rowNumber + 1, columnNumber + 1))
+
+			self.tiles.append(row)
+
 	def StartGame(self) -> None:
 		
-		def CreatTiles(rowCount, columnCount):
-
-			self.tiles = []
-
-			for rowNumber in range(rowCount):
-
-				row = []
-
-				for columnNumber in range(columnCount):
-					row.append(Tile(132, 99, rowNumber + 1, columnNumber + 1))
-
-				self.tiles.append(row)
-
-		def CreateClouds(count):
+		def CreateClouds(count) -> None:
 
 			self.clouds = []
 			
@@ -646,7 +692,7 @@ class Application():
 				cloud = Cloud(ImagePath("cloud"), self.windowWidth, self.windowHeight)
 				self.clouds.append(cloud)
 
-		def CreateGUI():
+		def CreateGUI() -> None:
 			
 			self.gamePanelSize = self.gamePanelWidth, self.gamePanelHeight = (1400, 100)
 			self.gamePanelPosition = self.gamePanelX, self.gamePanelY = (20, self.windowHeight - self.gamePanelHeight - 20)
@@ -655,27 +701,29 @@ class Application():
 			self.infoModeFalseButton = Button("red", (80, 20), (100, 800), "yellow", size=(60, 60), selectedSize=(200, 30))
 			self.infoModeTrueButton = Button("green", (80, 20), (100, 800), "yellow", size=(60, 60), selectedSize=(200, 30))
 			self.infoModeButtonImage = Image(ImagePath("info", "gui"), (5, 5), (5, 5), (50, 50))
+					
+			self.expandButton = Button("green", (300, 20), (320, 800), "red", "EXPAND", str(self.expandCost(self.rowCount)) + "$", White, White, (27, 10), (40, 12), self.buttonFont, (200, 60))
 			
-			self.buildButton = Button("green", (600, 20), (620, 800), "red", "BUILD", str(self.buildCost) + "$", White, White, (50, 10), (60, 12), self.buttonFont, (200, 60))
+			self.SetAge(self.ageNumber)
 
 			self.moneySurface = pygame.Surface((150, 50), pygame.SRCALPHA)
 
-		self.age = 0
+		self.ageNumber = 0
 		self.money = self.startingMoney
 		self.isInfoPanelOpen = False
 		self.infoMode = False
 		self.buildings = []
 		
 		CreateClouds(self.cloudCount)
-		CreatTiles(self.rowCount, self.columnCount)
+		self.CreateTiles(self.rowCount, self.columnCount)
 		CreateGUI()
 
 	def Draw(self) -> None:
 
-		def FillBackgroundColor(color: tuple):
+		def FillBackgroundColor(color: tuple) -> None:
 			self.window.fill(color)
 
-		def DrawCloudAnimation():
+		def DrawCloudAnimation() -> None:
 			for cloud in self.animationClouds:
 				cloud.Move()
 				cloud.Draw(self.window)
@@ -683,7 +731,7 @@ class Application():
 				if cloud.position.x >= self.windowWidth or cloud.position.x <= -cloud.width:
 					self.animationClouds.remove(cloud)
 
-		def DrawMenuObjects():
+		def DrawMenuObjects() -> None:
 			
 			def DrawGUI():
 				self.mainMenu.Draw(self.window)
@@ -691,7 +739,7 @@ class Application():
 			FillBackgroundColor(self.menuBackgroundColor)
 			DrawGUI()
 
-		def DrawSettingsObjects():
+		def DrawSettingsObjects() -> None:
 
 			def DrawGUI():
 				self.settingsMenu.Draw(self.window)
@@ -699,9 +747,9 @@ class Application():
 			FillBackgroundColor(self.menuBackgroundColor)
 			DrawGUI()
 
-		def DrawGameObjects():
+		def DrawGameObjects() -> None:
 
-			def DrawClouds():
+			def DrawClouds() -> None:
 
 				for cloud in self.clouds:
 					if self.windowWidth - cloud.width + cloud.velocity[0] >= cloud.position.x > self.windowWidth - cloud.width and cloud.velocity[0] > 0:
@@ -722,7 +770,7 @@ class Application():
 					cloud.Move()
 					cloud.Draw(self.window)
 			
-			def DrawTiles():
+			def DrawTiles() -> None:
 
 				for row in self.tiles:
 					for tile in row:
@@ -734,7 +782,6 @@ class Application():
 				for building in self.buildings:
 					
 					#-# Money #-#
-					
 					if not building.lastTime: building.lastTime = time
 					
 					if time - building.lastTime > (building.cooldown)*1000:
@@ -755,6 +802,8 @@ class Application():
 					self.infoModeButtonImage.Draw(self.infoModeFalseButton)
 					self.infoModeFalseButton.Draw(self.gamePanel)
 				
+				self.nextAgeButton.Draw(self.gamePanel)
+				self.expandButton.Draw(self.gamePanel)
 				self.buildButton.Draw(self.gamePanel)
 
 				if self.isInfoPanelOpen:
@@ -781,18 +830,24 @@ class Application():
 			DrawBuildings()
 			DrawGUI()
 
-		def DrawCursor():
+		def DrawCursor() -> None:
 			self.cursor.SetPosition(self.mousePosition)
 			self.cursor.Draw(self.window)
 
 		if self.tab == "menu":
+
 			DrawMenuObjects()
+
 		elif self.tab == "settings":
+
 			DrawSettingsObjects()
+
 		elif self.tab == "game":
+
 			DrawGameObjects()
 
 		if len(self.animationClouds) != 0:
+
 			DrawCloudAnimation()
 
 		DrawCursor()

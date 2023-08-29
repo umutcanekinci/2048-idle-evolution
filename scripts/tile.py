@@ -51,8 +51,9 @@ class Tile(object):
 		self.cornersOfSelectedPolygon[3] = self.cornersOfSelectedPolygon[3][0], self.cornersOfSelectedPolygon[3][1] - self.y + self.selectedRect.y
 
 	def RowNumberAndColumnNumberToPosition(self, row, column) -> tuple:
+		
 		x = (column-row)*65 + 655
-		y = (row+column)*32 + 258
+		y = (column+row)*32 + 258
 
 		return x, y
 
@@ -84,7 +85,8 @@ class Tile(object):
 	def isMouseOver(self, mousePosition) -> bool:
 		return self.isMouseOverSelected(mousePosition) or self.isMouseOverUnselected(mousePosition)
 
-	def Draw(self, Window: pygame.Surface):
+	def Draw(self, Window: pygame.Surface) -> None:
+
 		if self.selected:
 			Window.blit(self.selectedSurface, self.rect)
 		else:

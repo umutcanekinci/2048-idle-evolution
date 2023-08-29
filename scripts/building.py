@@ -3,20 +3,23 @@ import pygame
 from images import *
 from scripts.tile import *
 
+ages = ["wood", "rock", "sand", "stone"]
+
 #-# Building Class #-#
 class Building(Image):
 
-    def __init__(self, level, age, tile: Tile) -> None:
+    def __init__(self, level, ageNumber, tile: Tile) -> None:
         
         self.tile = tile
-        self.age = age
+        self.ageNumber = ageNumber
+        self.age = ages[ageNumber]
         self.selected = False
         self.destroy = False
         self.cooldown = 2
         self.lastTime = None
         self.level = level
-        self.speed = (self.level * 2) - 1 # cash per second
-        self.sellPrice = self.level*80
+        self.speed = (self.level * 2 * (ageNumber + 1)) - 1 # cash per second
+        self.sellPrice = self.level*(self.ageNumber+1)*70
         self.SetSize()
         self.SetPositionFromTile(self.tile)
         super().__init__(self.GetImagePath(), self.unselectedPosition, size=self.size)
@@ -70,14 +73,17 @@ class Building(Image):
     def Draw(self, surface: pygame.Surface, buildings: list) -> None:
         
         if self.velocity == Vector2(0, 0):
+
             if self.destroy:
+
                 buildings.remove(self)
                 buildings.remove(self.newBuilding)
-                buildings.append(Building(self.level + 1, self.age, self.tile))
+                buildings.append(Building(self.level + 1, self.ageNumber, self.tile))
                 buildings.sort(key=lambda building: building.tile.columnNumber)
 
             else:
-                if self.tile.selected:
+
+                if self.tile.selected and self.tile.rect == self.tile.selectedRect:
                     self.position = self.selectedPosition
                 else:
                     self.position = self.unselectedPosition

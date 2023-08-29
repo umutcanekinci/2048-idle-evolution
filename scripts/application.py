@@ -32,6 +32,7 @@ class Application():
 		self.maxBuildingLevel = 6
 		self.startingMoney = 10000
 		self.buildCost = 100
+		self.ages = ["wood", "rock", "sand", "stone"]
 
 		#-# FPS #-#
 		self.FPS = 165
@@ -534,7 +535,7 @@ class Application():
 
 			self.buildings.sort(key=lambda building: building.tile.columnNumber)
 
-	def CreateBuilding(self) -> None:
+	def CreateBuilding(self) -> None:	
 
 		isBuildingsMoving = False
 
@@ -561,7 +562,7 @@ class Application():
 					
 					rowNumber, columnNumber = choice(emptyTiles)
 
-					newBuilding = Building(1, self.tiles[rowNumber - 1][columnNumber - 1])
+					newBuilding = Building(1, self.ages[self.age], self.tiles[rowNumber - 1][columnNumber - 1])
 					self.money -= self.buildCost
 					self.buildings.append(newBuilding)
 					self.buildings.sort(key=lambda building: building.tile.columnNumber)
@@ -659,7 +660,7 @@ class Application():
 
 			self.moneySurface = pygame.Surface((150, 50), pygame.SRCALPHA)
 
-
+		self.age = 0
 		self.money = self.startingMoney
 		self.isInfoPanelOpen = False
 		self.infoMode = False

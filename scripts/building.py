@@ -6,9 +6,10 @@ from scripts.tile import *
 #-# Building Class #-#
 class Building(Image):
 
-    def __init__(self, level, tile: Tile) -> None:
+    def __init__(self, level, age, tile: Tile) -> None:
         
         self.tile = tile
+        self.age = age
         self.selected = False
         self.destroy = False
         self.cooldown = 2
@@ -23,7 +24,7 @@ class Building(Image):
         self.SetVelocity((0, 0))
 
     def GetImagePath(self) -> str:
-        return ImagePath("level" + str(self.level), "buildings")
+        return ImagePath("level" + str(self.level), "buildings/" + self.age)
 
     def SetSize(self) -> None:
 
@@ -72,7 +73,7 @@ class Building(Image):
             if self.destroy:
                 buildings.remove(self)
                 buildings.remove(self.newBuilding)
-                buildings.append(Building(self.level + 1, self.tile))
+                buildings.append(Building(self.level + 1, self.age, self.tile))
                 buildings.sort(key=lambda building: building.tile.columnNumber)
 
             else:

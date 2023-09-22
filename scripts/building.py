@@ -6,7 +6,7 @@ from scripts.tile import *
 ages = ["wood", "rock", "sand", "stone"]
 
 #-# Building Class #-#
-class Building(Image):
+class Building(Object):
 
     def __init__(self, level, ageNumber, tile: Tile) -> None:
         
@@ -20,16 +20,17 @@ class Building(Image):
         self.level = level
         self.speed = (self.level * 2 * (ageNumber + 1)) - 1 # cash per second
         self.sellPrice = self.level*(self.ageNumber+1)*70
-        self.SetSize()
+        self.__SetSize()
         self.SetPositionFromTile(self.tile)
-        super().__init__(self.GetImagePath(), self.unselectedPosition, size=self.size)
-        self.rect = self.GetRect()
+        super().__init__(self.unselectedPosition, self.size, {"Normal" : self.GetImagePath()})
+        #self.rect = self.GetRect()
         self.SetVelocity((0, 0))
 
     def GetImagePath(self) -> str:
+        
         return ImagePath("level" + str(self.level), "buildings/" + self.age)
 
-    def SetSize(self) -> None:
+    def __SetSize(self) -> None:
 
         if self.level == 1 or self.level == 2:
             self.floorCount = 1
@@ -47,9 +48,10 @@ class Building(Image):
         self.unselectedPosition = Vector2(x, y)
         self.selectedPosition = Vector2(x, y - 10)
 
-    def Move(self) -> None:
+    def __Move(self) -> None:
 
         if (self.targetPosition.x < self.position.x < self.targetPosition.x + self.velocity.x or self.targetPosition.x > self.position.x > self.targetPosition.x + self.velocity.x) and (self.targetPosition.y < self.position.y < self.targetPosition.y + self.velocity.y or self.targetPosition.y > self.position.y > self.targetPosition.y + self.velocity.y):
+            
             self.velocity = Vector2(0, 0)
 
         self.position += self.velocity
@@ -70,7 +72,7 @@ class Building(Image):
         self.newBuilding = newBuilding
         self.destroy = True
 
-    def Draw(self, surface: pygame.Surface, buildings: list) -> None:
+    def Draw(self, surface: pygame.Surface, buildings: list ={}) -> None:
         
         if self.velocity == Vector2(0, 0):
 
@@ -84,11 +86,38 @@ class Building(Image):
             else:
 
                 if self.tile.selected and self.tile.rect == self.tile.selectedRect:
+
                     self.position = self.selectedPosition
+
                 else:
+
                     self.position = self.unselectedPosition
         else:
 
-            self.Move()
+            self.__Move()
         
         super().Draw(surface)
+
+class Buildings(list[Building]):
+
+    def __init__(self) -> None:
+
+        super().__init__()
+
+    def SetAge(self, ageNumber):
+
+        self.ageNumber = ageNumber
+
+        for i, building in enumerate(self):
+
+            self[i] = Building(building.level, self.ageNumber, building.tile)
+
+    def HandleEvents(self, event, mousePosition) -> None:
+
+        pass
+
+    def Draw(self, surface):
+
+        for building in self:
+
+            building.Draw(surface)

@@ -1,9 +1,12 @@
 #-# Import Packages #-#
 import pygame
 from images import *
-from scripts.button import *
+from scripts.default.menu_button import *
+from scripts.default.application import Application
 
+#-# Menu Class #-#
 class Menu(pygame.Surface):
+
     def __init__(
             self,
             position: tuple,
@@ -20,49 +23,119 @@ class Menu(pygame.Surface):
             buttonColor: tuple,
             buttonSelectedColor,
             buttonTexts : tuple,
+            buttonTextSize,
             buttonTextColor: tuple,
             buttonSelectedTextColor: tuple,
+            buttonTextBackgroundColor, 
+            buttonSelectedTextBackgroundColor,
             buttonsTextPositions: tuple,
-            buttonTextFont: pygame.font.Font
+            buttonTextFontName: str
             ) -> None:
         
 
         space = 20 # space between objects
         buttonAdditionalSize = 15
-        self.position = Vector2(position)
+
+        self.position = pygame.math.Vector2(position)
         
+        #-# Sound Paths #-#
+        self.switchUpSoundPath = SoundPath("switchUp")
+        self.switchDownSoundPath = SoundPath("switchDown")
+
         #-# Title #-#
-        self.title = Image(titleImagePath, (0, 0), self.position, titleSize)
+        self.title = Object((0, 0), titleSize, {"Normal" : titleImagePath}, screenPosition=self.position)
         self.titleText = titleTextFont.render(titleText, False, titleTextColor)
-        self.title.blit(self.titleText, titleTextPosition)
+        self.title.surfaces["Normal"].blit(self.titleText, titleTextPosition)
 
         #-# Button Panel #-#
         self.buttonPanelSize = [buttonSize[0] + space * 2, buttonSize[1]*buttonCount + (buttonCount + 3)*space]
         self.buttonPanelPosition = 0, titleSize[1] - space/2
-        self.buttonPanel = Image(buttonPanelImagePath, self.buttonPanelPosition, None, self.buttonPanelSize)
+        self.buttonPanel = Object(self.buttonPanelPosition, self.buttonPanelSize, {"Normal" : buttonPanelImagePath})
         
         #-# Buttons #-#
         buttonSelectedSize = buttonSize[0], buttonSize[1] + buttonAdditionalSize
         self.buttons = []
+
         for i in range(buttonCount):
-            buttonPosition = Vector2(space, space*(i+3/2) + buttonSize[1]*i)
+
+            buttonPosition = pygame.math.Vector2(space, space*(i+3/2) + buttonSize[1]*i)
             buttonScreenPosition = buttonPosition + self.buttonPanelPosition + self.position
             
-            self.buttons.append(Button(buttonColor, buttonPosition, buttonScreenPosition, buttonSelectedColor, buttonTexts[i], buttonTexts[i], buttonTextColor, buttonSelectedTextColor
-                                , buttonsTextPositions[i], (buttonsTextPositions[i][0], buttonsTextPositions[i][1] + buttonAdditionalSize / 2)
-                                , buttonTextFont, buttonSize, buttonSelectedSize))
+            self.buttons.append(MenuButton(buttonColor, buttonPosition, buttonScreenPosition, buttonSelectedColor, buttonTexts[i], buttonTexts[i], buttonTextColor, buttonSelectedTextColor
+                                , buttonTextBackgroundColor, buttonSelectedTextBackgroundColor, buttonsTextPositions[i], (buttonsTextPositions[i][0], buttonsTextPositions[i][1] + buttonAdditionalSize / 2)
+                                , buttonTextSize, buttonTextFontName, buttonSize, buttonSelectedSize))
+
+        if buttonCount > 0:
+
+            self.buttons[0].SetStatus("Selected")
 
         self.size = self.buttonPanelSize[0], self.buttonPanelSize[1] + titleSize[1] - space/2
+
         super().__init__(self.size, pygame.SRCALPHA)
 
+    def HandleEvents(self, event, mousePosition) -> None:
 
-    def Draw(self, surface: pygame.Surface):
+        #-# Change the color of buttons if mouse over it #-#
+        if event.type == pygame.MOUSEMOTION:
+
+            for i, button in enumerate(self.buttons):
+
+                if button.isMouseOver(mousePosition) and button.status != "Selected":
+
+                    for j, button2 in enumerate(self.buttons):
+
+                        if button2.status == "Selected":
+                            
+                            if j > i:
+
+                                Application.PlaySound(self.switchDownSoundPath)
+
+                            else:
+
+                                Application.PlaySound(self.switchUpSoundPath)
+
+                            button.SetStatus("Selected")
+                            button2.SetStatus("Unselected")
+
+                            break
+
+        #-# Change the selected button with keys #-#
+        elif event.type == pygame.KEYUP:
+  
+            if event.key == pygame.K_w or event.key == pygame.K_UP:
+
+                for i, button in enumerate(self.buttons):
+                            
+                    if button.status == "Selected" and i != 0:
+                        
+                        Application.PlaySound(self.switchUpSoundPath)
+
+                        self.buttons[i-1].SetStatus("Selected")
+                        button.SetStatus("Unselected")
+
+                        break
+
+            elif event.key == pygame.K_s or event.key == pygame.K_DOWN:
+
+                for i, button in enumerate(self.buttons):
+                            
+                    if button.status == "Selected" and i != len(self.buttons) - 1:
+                        
+                        Application.PlaySound(self.switchDownSoundPath)
+
+                        self.buttons[i+1].SetStatus("Selected")
+                        button.SetStatus("Unselected")
+
+                        break
+
+    def Draw(self, surface: pygame.Surface) -> None:
 
         self.title.Draw(self)
-        self.buttonPanel.ReblitImage()
+        self.buttonPanel = Object(self.buttonPanel.position, self.buttonPanel.size, self.buttonPanel.imagePaths)
 
         for button in self.buttons:
-            button.Draw(self.buttonPanel)
+
+            button.Draw(self.buttonPanel.surfaces["Normal"])
 
         self.buttonPanel.Draw(self)
 

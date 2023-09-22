@@ -1,8 +1,8 @@
 #-# Import Packages #-#
 import pygame
 from pygame.math import Vector2
-from scripts.color import *
-from scripts.image import *
+from scripts.default.color import *
+from scripts.default.object import *
 
 class Tile(object):
 	
@@ -11,10 +11,10 @@ class Tile(object):
 		self.rowNumber, self.columnNumber = rowNumber, columnNumber
 		
 		self.position = self.x, self.y = self.RowNumberAndColumnNumberToPosition(self.rowNumber, self.columnNumber)
-		self.image = Image(ImagePath("tile"), self.position)
+		self.image = Object(self.position, (0, 0), {"Normal" : ImagePath("tile")})
 		
 		self.selected = False
-		self.rect = self.image.GetRect()
+		self.rect = self.image.rect
 		self.selectedRect = self.rect.copy()
 		self.unselectedRect = self.rect.copy()
 		self.selectedRect.y -= 10
@@ -25,7 +25,7 @@ class Tile(object):
 		self.size = self.width, self.height = width, height
 		
 		
-		self.surface = self.unselectedSurface = self.image
+		self.surface = self.unselectedSurface = self.image.surfaces["Normal"]
 		self.selectedSurface = self.unselectedSurface.__copy__()
 		self.isEmpty = True
 
@@ -92,3 +92,71 @@ class Tile(object):
 		else:
 			Window.blit(self.unselectedSurface, self.rect)
 		
+class Tiles(list[Tile]):
+
+	def __init__(self, size, maxSize) -> None:
+		
+		self.size = self.rowCount, self.columnCount = size
+		self.maxSize = self.maxRowCount, self.maxColumnCount = maxSize
+
+		self.Create()
+
+	def Create(self) -> None:
+
+		super().__init__()
+
+		for rowNumber in range(self.rowCount):
+
+			row = []
+
+			for columnNumber in range(self.columnCount):
+
+				row.append(Tile(132, 99, rowNumber + 1, columnNumber + 1))
+
+			self.append(row)
+	
+	def isThereSelectedTile(self) -> bool:
+
+		for row in self:
+
+			for tile in row:
+
+				if tile.selected:
+
+					return True
+				
+		return False
+
+	def Expand(self):
+
+		if self.rowCount < self.maxRowCount and self.columnCount < self.maxColumnCount:
+
+			self.size = self.rowCount, self.columnCount = self.rowCount + 1, self.columnCount + 1
+			self.Create()
+
+	def ExpandRows(self):
+
+		if self.rowCount < self.maxRowCount:
+
+			self.size = self.rowCount, self.columnCount = self.rowCount + 1, self.columnCount
+			self.Create()
+
+	def ExpandColumns(self):
+
+		if self.columnCount < self.maxColumnCount:
+
+			self.size = self.rowCount, self.columnCount = self.rowCount, self.columnCount + 1
+			self.Create()
+
+	def HandleEvents(self, event: pygame.event.Event, mouesPosition: tuple):
+
+		pass
+
+	def Draw(self, surface: pygame.Surface) -> None:
+
+		for row in self:
+
+			for tile in row:
+				
+				tile.Draw(surface)
+

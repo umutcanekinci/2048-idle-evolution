@@ -26,9 +26,6 @@ class Menu(pygame.Surface):
             buttonTextSize,
             buttonTextColor: tuple,
             buttonSelectedTextColor: tuple,
-            buttonTextBackgroundColor, 
-            buttonSelectedTextBackgroundColor,
-            buttonsTextPositions: tuple,
             buttonTextFontName: str
             ) -> None:
         
@@ -62,8 +59,10 @@ class Menu(pygame.Surface):
             buttonScreenPosition = buttonPosition + self.buttonPanelPosition + self.position
             
             self.buttons.append(MenuButton(buttonColor, buttonPosition, buttonScreenPosition, buttonSelectedColor, buttonTexts[i], buttonTexts[i], buttonTextColor, buttonSelectedTextColor
-                                , buttonTextBackgroundColor, buttonSelectedTextBackgroundColor, buttonsTextPositions[i], (buttonsTextPositions[i][0], buttonsTextPositions[i][1] + buttonAdditionalSize / 2)
                                 , buttonTextSize, buttonTextFontName, buttonSize, buttonSelectedSize))
+
+
+            #self.buttons.append(Button(buttonPosition, buttonSize, {"Selected" : ImagePath("blue", "gui"), "Unselected" : ImagePath("yellow", "gui")}, buttonTexts[i], buttonTexts[i], 25))
 
         if buttonCount > 0:
 

@@ -56,23 +56,14 @@ class Game(Application):
 		self.SetFonts()
 
 		#-# Main Menu #-# 
-		buttonSize = (400, 60)
 		self.menuWidth, self.menuHeight = (440, 315)
 		menuPosition = (self.width - self.menuWidth) / 2, (self.height - self.menuHeight) / 2
-		buttonTexts = ["Start", "Settings", "Exit"]
-		buttonTextPositions = [(140, 10), (110, 10), (160, 10)]
-
-		self.mainMenu = Menu(menuPosition, ImagePath("blue_button03", "gui"), (440, 70), self.title, White, self.buttonFont, (118, 15), ImagePath("grey_panel", "gui"), 3, buttonSize, "blue", "yellow", buttonTexts, 30, White, Gray, None, None, buttonTextPositions, self.fontPath)
+		self.mainMenu = Menu(menuPosition, ImagePath("blue_button03", "gui"), (440, 70), self.title, White, self.buttonFont, (118, 15), ImagePath("grey_panel", "gui"), 3, (400, 60), "blue", "yellow", ["Start", "Settings", "Exit"], 30, Gray, White, self.fontPath)
 		
 		#-# Settings Menu #-#
-		buttonSize = (400, 60)
 		self.menuWidth, self.menuHeight = (440, 315)
 		menuPosition = (self.width - self.menuWidth) / 2, (self.height - self.menuHeight) / 2
-		buttonTexts = ["Start", "Settings", "Exit"]
-		buttonTextPositions = [(140, 10), (110, 10), (160, 10)]
-
-		self.settingsMenu = Menu(menuPosition, ImagePath("blue_button03", "gui"), (440, 70), "Settings", White, self.buttonFont, (128, 15), ImagePath("grey_panel", "gui"), 0, buttonSize, "blue", "yellow", buttonTexts, 30, White, Gray, None, None, buttonTextPositions, self.buttonFont)
-
+		self.settingsMenu = Menu(menuPosition, ImagePath("blue_button03", "gui"), (440, 70), "Settings", White, self.buttonFont, (128, 15), ImagePath("grey_panel", "gui"), 0, (400, 60), "blue", "yellow", [], 30, Gray, White, self.fontPath)
 
 		#-# Game #-#
 		self.buildings = Buildings()
@@ -80,13 +71,6 @@ class Game(Application):
 
 		self.gamePanelSize = self.gamePanelWidth, self.gamePanelHeight = (1400, 100)
 		self.gamePanelPosition = self.gamePanelX, self.gamePanelY = (20, self.height - self.gamePanelHeight - 20)
-		self.gamePanel = Object(self.gamePanelPosition, self.gamePanelSize, {"Normal" : ImagePath("grey_panel", "gui")})
-
-		self.infoModeButton = Button((100, 800), (60, 60),  {"On" : ImagePath("green", "gui"), "Off" : ImagePath("red", "gui")})
-		self.infoModeButtonImage = Object((105, 805), (50, 50), {"Normal" : ImagePath("info", "gui")})
-		self.infoModeButton.SetStatus("Off")
-
-		self.moneyText = Text((1180, 810), "", 55, color=Green, backgorundColor=Black, isCentered=False)
 		
 		#region #-# Adding Objects #-#
 
@@ -95,19 +79,21 @@ class Game(Application):
 		self.AddObject("settings", "settings menu", self.settingsMenu)
 		self.AddObject("settings", "cloud animation", CloudAnimation(self.size))
 		self.AddObject("game", "clouds", GameClouds(self.cloudCount, self.size))
-		self.AddObject("game", "tiles", self.tiles)
-		self.AddObject("game", "game panel", self.gamePanel)
-		self.AddObject("game", "info mode button", self.infoModeButton)
-		self.AddObject("game", "info mode button image", self.infoModeButtonImage)
+		self.AddObject("game", "game panel", Object(self.gamePanelPosition, self.gamePanelSize, {"Normal" : ImagePath("grey_panel", "gui")}))
+		self.AddObject("game", "info mode button", Button((100, 800), (60, 60),  {"On" : ImagePath("green", "gui"), "Off" : ImagePath("red", "gui")}))
+		self.AddObject("game", "info mode button image", Object((105, 805), (50, 50), {"Normal" : ImagePath("info", "gui")}))
 		self.AddObject("game", "expand button", Button((320, 800), (200, 60), {"Normal" : ImagePath("green", "gui"), "Mouse Over" : ImagePath("red", "gui")}, "EXPAND", str(self.expandCost(self.tiles.rowCount)) + "$", 27, textFontPath=self.fontPath))
 		self.AddObject("game", "build button", Button((620, 800), (200, 60), {"Normal" : ImagePath("green", "gui"), "Mouse Over" : ImagePath("red", "gui")}, "BUILD", str(self.buildCost(0)) + "$", 27, textFontPath=self.fontPath))
 		self.AddObject("game", "next age button", Button((920, 800), (200, 60), {"Normal" : ImagePath("green", "gui"), "Mouse Over" : ImagePath("red", "gui")}, "NEXT AGE", str(self.ageCost(0)) + "$", 27, textFontPath=self.fontPath))
-		self.AddObject("game", "money text", self.moneyText)
+		self.AddObject("game", "money text", Text((1180, 810), "", 55, color=Green, backgorundColor=Black, isCentered=False))
+		self.AddObject("game", "tiles", self.tiles)
 		self.AddObject("game", "buildings", self.buildings)
 		self.AddObject("game", "cloud animation", CloudAnimation(self.size))
 		
 		#endregion
 		
+		self.objects["game"]["info mode button"].SetStatus("Off")
+
 		self.SetAge(0)
 
 	def SetFonts(self) -> None:
@@ -279,17 +265,17 @@ class Game(Application):
 				else:
 
 					#-# On/off info mode with clicking info mode button #-#
-					if self.infoModeButton.isMouseOver(self.mousePosition):
+					if self.objects[self.tab]["info mode button"].isMouseOver(self.mousePosition):
 						
 						self.infoMode = not self.infoMode
 						
 						if self.infoMode:
 
-							self.infoModeButton.SetStatus("On")
+							self.objects[self.tab]["info mode button"].SetStatus("On")
 
 						else:
 
-							self.infoModeButton.SetStatus("Off")
+							self.objects[self.tab]["info mode button"].SetStatus("Off")
 						
 						self.PlaySound(self.clickSoundPath)
 
@@ -601,10 +587,12 @@ class Game(Application):
 				building.lastTime = pygame.time.get_ticks()
 
 		#-# Money Text #-#
-		self.moneyText.Update("Normal", str(self.money) + "$")
+		self.objects[self.tab]["money text"].Update("Normal", str(self.money) + "$")
 
 	def Draw(self) -> None:
+		
+		if self.tab == "game":
 
-		self.UpdateMoney()
+			self.UpdateMoney()
 
 		super().Draw()

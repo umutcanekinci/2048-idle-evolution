@@ -23,7 +23,7 @@ class Application():
         self.objects = {}
         self.tab = ""
 
-    def Run(self, eventHandlings=None) -> None:
+    def Run(self) -> None:
         
         #-# Starting App #-#
         self.isRunning = True
@@ -118,12 +118,12 @@ class Application():
 
         self.backgroundColor = color
 
-    def CreateObject(self, tab: str, name: str, *args):
+    def CreateObject(self, tab: str, name: str, *args) -> None:
         
         newObject = Object(*args)
         self.AddObject(tab, name, newObject)
 
-    def AddObject(self, tab: str, name: str, object: Object):
+    def AddObject(self, tab: str, name: str, object: Object) -> None:
         
         #-# Create Tab If not exist #-#
         self.AddTab(tab)
@@ -136,16 +136,16 @@ class Application():
         self.AddTab(tab)
         
         #-# Adding button to tab #-#
-        newButton = Button(name, *args, **kwargs)
+        newButton = Buttonxx(name, *args, **kwargs)
         self.objects[tab][name] = newButton
 
-    def CreateText(self, tab: str, name: str, position, text, textSize, antialias=True, color=White, backgorundColor=None) -> None:
+    def CreateText(self, tab: str, name: str, position, text, textSize, antialias=True, color=White, backgorundColor=None, fontPath=None, isCentered=False, status="Normal") -> None:
         
         #-# Creat Tab If not exist #-#
         self.AddTab(tab)
         
         #-# Adding button to tab #-#
-        newText = Text(position, text, textSize, antialias, color, backgorundColor)
+        newText = Text(position, text, textSize, antialias, color, backgorundColor, fontPath, isCentered, status)
         self.objects[tab][name] = newText
 
     def AddTab(self, name: str) -> None:
@@ -155,7 +155,7 @@ class Application():
 
             self.objects[name] = {}
 
-    def OpenTab(self, tab: str):
+    def OpenTab(self, tab: str) -> None:
 
         self.tab = tab
 

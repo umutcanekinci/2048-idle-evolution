@@ -3,6 +3,7 @@ import pygame
 from random import choice
 
 from scripts.default.application import *
+from scripts.default.database import *
 from scripts.default.menu_button import *
 from scripts.default.color import *
 from scripts.default.object import *
@@ -25,18 +26,10 @@ class Game(Application):
 		self.cursorSize = 25, 25
 		self.gameBackgorundColor = CustomBlue
 		self.menuBackgroundColor = Yellow
-		self.cloudCount = 10
-		self.rowCount = self.columnCount = 2
+		self.cloudCount = 30
 		self.maxRowCount, self.maxColumnCount = 7, 7
 		self.maxBuildingLevel = 6
-		self.money = 10000
-		self.isInfoPanelOpen = False
-		self.infoMode = False
-
-		#-# Costs #-#
-		self.buildCost = lambda age: (age+1)*100
-		self.ageCost = lambda age: (age+1)*1000
-		self.expandCost = lambda x: (x+1)*100
+		self.startingMoney = 10000
 
 		#region Paths
 
@@ -53,26 +46,35 @@ class Game(Application):
 		#-# Start The Application #-#
 		self.SetCursorVisible(False)
 		self.SetCursorImage(Object((0, 0), self.cursorSize, {"Normal" : ImagePath("cursor")}))
-		self.SetFonts()
+		self.infoPanelTextFont = pygame.font.Font(self.fontPathThin, 15)
 
 		#-# Main Menu #-# 
 		self.menuWidth, self.menuHeight = (440, 315)
 		menuPosition = (self.width - self.menuWidth) / 2, (self.height - self.menuHeight) / 2
-		self.mainMenu = Menu(menuPosition, ImagePath("blue_button03", "gui"), (440, 70), self.title, White, self.buttonFont, (118, 15), ImagePath("grey_panel", "gui"), 3, (400, 60), "blue", "yellow", ["Start", "Settings", "Exit"], 30, Gray, White, self.fontPath)
+		self.mainMenu = Menu(menuPosition, ImagePath("blue_button03", "gui"), (440, 70), self.title, 30, White, self.fontPath, (118, 15), ImagePath("grey_panel", "gui"), (400, 60), "blue", "yellow", ["Start", "Settings", "Exit"], 30, Gray, White, self.fontPath)
 		
 		#-# Settings Menu #-#
 		self.menuWidth, self.menuHeight = (440, 315)
 		menuPosition = (self.width - self.menuWidth) / 2, (self.height - self.menuHeight) / 2
-		self.settingsMenu = Menu(menuPosition, ImagePath("blue_button03", "gui"), (440, 70), "Settings", White, self.buttonFont, (128, 15), ImagePath("grey_panel", "gui"), 0, (400, 60), "blue", "yellow", [], 30, Gray, White, self.fontPath)
+		self.settingsMenu = Menu(menuPosition, ImagePath("blue_button03", "gui"), (440, 70), "Settings", 30, White, self.fontPath, (128, 15), ImagePath("grey_panel", "gui"), (400, 60), "blue", "yellow", ["Delete Data", "GO BACK"], 30, Gray, White, self.fontPath)
 
-		#-# Game #-#
-		self.buildings = Buildings()
-		self.tiles = Tiles([self.rowCount, self.columnCount], [self.maxRowCount, self.maxColumnCount])
-
+		#-# GamePanel
 		self.gamePanelSize = self.gamePanelWidth, self.gamePanelHeight = (1400, 100)
 		self.gamePanelPosition = self.gamePanelX, self.gamePanelY = (20, self.height - self.gamePanelHeight - 20)
+
+		self.GetDatasFromDatabase()
+
+		self.AddObjects()
+
+		#-# Info Panel #-#
+		self.objects["game"]["info mode button"].SetStatus("Off")
+		self.objects["game"]["info panel close button"].surfaces["Normal"].blit(Images(ImagePath("grey_crossWhite", "gui")), (9, 9))
+		self.objects["game"]["info panel close button"].surfaces["Normal"].blit(Images(ImagePath("grey_crossGrey", "gui")), (9, 9))
 		
-		#region #-# Adding Objects #-#
+		self.SetAge(self.buildings.ageNumber)
+		self.UpdateButtonTexts()
+
+	def AddObjects(self):
 
 		self.AddObject("menu", "main menu", self.mainMenu)
 		self.AddObject("menu", "cloud animation", CloudAnimation(self.size))
@@ -82,25 +84,136 @@ class Game(Application):
 		self.AddObject("game", "game panel", Object(self.gamePanelPosition, self.gamePanelSize, {"Normal" : ImagePath("grey_panel", "gui")}))
 		self.AddObject("game", "info mode button", Button((100, 800), (60, 60),  {"On" : ImagePath("green", "gui"), "Off" : ImagePath("red", "gui")}))
 		self.AddObject("game", "info mode button image", Object((105, 805), (50, 50), {"Normal" : ImagePath("info", "gui")}))
-		self.AddObject("game", "expand button", Button((320, 800), (200, 60), {"Normal" : ImagePath("green", "gui"), "Mouse Over" : ImagePath("red", "gui")}, "EXPAND", str(self.expandCost(self.tiles.rowCount)) + "$", 27, textFontPath=self.fontPath))
-		self.AddObject("game", "build button", Button((620, 800), (200, 60), {"Normal" : ImagePath("green", "gui"), "Mouse Over" : ImagePath("red", "gui")}, "BUILD", str(self.buildCost(0)) + "$", 27, textFontPath=self.fontPath))
-		self.AddObject("game", "next age button", Button((920, 800), (200, 60), {"Normal" : ImagePath("green", "gui"), "Mouse Over" : ImagePath("red", "gui")}, "NEXT AGE", str(self.ageCost(0)) + "$", 27, textFontPath=self.fontPath))
-		self.AddObject("game", "money text", Text((1180, 810), "", 55, color=Green, backgorundColor=Black, isCentered=False))
+		self.AddObject("game", "expand button", Button((320, 800), (200, 60), {"Normal" : ImagePath("green", "gui"), "Mouse Over" : ImagePath("red", "gui")}, "EXPAND", str(self.tiles.GetExpandCost()) + "$", 27, textFontPath=self.fontPath))
+		self.AddObject("game", "build button", Button((620, 800), (200, 60), {"Normal" : ImagePath("green", "gui"), "Mouse Over" : ImagePath("red", "gui")}, "BUILD", str(self.buildings.GetBuildCost()) + "$", 27, textFontPath=self.fontPath))
+		self.AddObject("game", "next age button", Button((920, 800), (200, 60), {"Normal" : ImagePath("green", "gui"), "Mouse Over" : ImagePath("red", "gui")}, "NEXT AGE", str(self.buildings.GetAgeCost()) + "$", 27, textFontPath=self.fontPath))
+		self.AddObject("game", "money text", Text((1180, 810), "", 55, color=Green, backgroundColor=Black, isCentered=False))
 		self.AddObject("game", "tiles", self.tiles)
 		self.AddObject("game", "buildings", self.buildings)
+		self.AddObject("game", "info panel", Object(((self.width - 250)/2, (self.height - 400)/2), (250, 400), {"Normal" : ImagePath("grey_panel", "gui")}, show=False))
+		self.AddObject("game", "info panel top side", Object(((self.width - 250)/2, (self.height - 400)/2), (250, 300), show=False))
+		self.AddObject("game", "info panel close button", Button(((self.width - 250)/2 + 250 - 20, (self.height - 400)/2 - 12), None, {"Normal" : ImagePath("red_circle", "gui"), "Mouse Over" : ImagePath("yellow_circle", "gui")}, show=False))
 		self.AddObject("game", "cloud animation", CloudAnimation(self.size))
 		
-		#endregion
+	def GetDatasFromDatabase(self):
+
+		self.database = Database("database")
+	
+		if self.database.Connect():
+
+			sqlCode = "CREATE TABLE IF NOT EXISTS game(age_number INTEGER, size INTEGER, money INTEGER)"
+			self.database.Execute(sqlCode)
+			self.database.Commit()
+			self.database.Disconnect()
+
+			if self.database.Connect():
+
+				sqlCode = "SELECT * FROM game"
+				self.database.Execute(sqlCode)
+				gameData = self.database.Execute(sqlCode).fetchall()
+
+				if not gameData:
+
+					sqlCode = "INSERT INTO game(age_number, size, money) VALUES(0, 2, "+str(self.startingMoney)+")"
+					self.database.Execute(sqlCode)
+					self.database.Commit()
+					self.database.Disconnect()
+
+					if self.database.Connect():
+
+						sqlCode = "SELECT * FROM game"
+						gameData = self.database.Execute(sqlCode).fetchall()
+
+					else:
+
+						self.Exit()
+
+				ageNumber, size, money = gameData[0]
+
+				self.tiles = Tiles([size, size], [self.maxRowCount, self.maxColumnCount])
+				self.money = money
+
+				self.database.Execute("CREATE TABLE IF NOT EXISTS buildings(level INTEGER, row INTEGER, column INTEGER)")
+				self.database.Commit()
+				self.database.Disconnect()
+
+				if self.database.Connect():
+
+					data = self.database.Execute("SELECT * FROM buildings")
+					buildings = data.fetchall()
+
+					self.buildings = Buildings()
+					self.buildings.ageNumber = ageNumber
+
+					for building in buildings:
+
+						self.AddBuilding(*building)
+					
+					self.database.Disconnect()
+						  
+				else:
+				
+					self.Exit()
+
+			else:
+
+				self.Exit()
+
+		else:
+
+			self.Exit()
+
+	def DeleteData(self):
+
+		if self.database.Connect():
+
+			sqlCode = "DELETE FROM game"
+			self.database.Execute(sqlCode)
+			self.database.Commit()
+			self.database.Disconnect()
+
+			if self.database.Connect():
+
+				sqlCode = "DELETE FROM buildings"
+				self.database.Execute(sqlCode)
+				self.database.Commit()
+				self.database.Disconnect()
+
+			else: 
+
+				self.Exit()
+
+		else: 
+
+			self.Exit()
+
+	def UpdateButtonTexts(self):
+
+		if self.tiles.isMaxSize():
+
+			self.objects["game"]["expand button"].text.UpdateText("Mouse Over", "MAX SIZE")
 		
-		self.objects["game"]["info mode button"].SetStatus("Off")
+		else:
 
-		self.SetAge(0)
+			self.objects["game"]["expand button"].text.UpdateText("Mouse Over", str(self.tiles.GetExpandCost()) + "$")
+		
+		if len(self.buildings) == self.tiles.rowCount*self.tiles.columnCount:
+			
+			self.objects["game"]["build button"].text.UpdateText("Mouse Over", "TILES ARE FULL")
+			self.objects["game"]["build button"].text.UpdateSize("Mouse Over", 17)
 
-	def SetFonts(self) -> None:
+		else:
 
-		self.buttonFont = pygame.font.Font(self.fontPath, 30)
-		self.infoPanelTextFont = pygame.font.Font(self.fontPathThin, 15)
-		self.infoPanelButtonFont = pygame.font.Font(self.fontPathThin, 24)
+			self.objects["game"]["build button"].text.UpdateText("Mouse Over", str(self.buildings.GetBuildCost()) + "$")
+			self.objects["game"]["build button"].text.UpdateSize("Mouse Over", 27)
+
+		if self.buildings.ageNumber == self.buildings.maxAgeNumber:
+			
+			self.objects["game"]["next age button"].text.UpdateText("Mouse Over", "MAX AGE")
+
+		else:
+
+			self.objects["game"]["next age button"].text.UpdateText("Mouse Over", str(self.buildings.GetAgeCost()) + "$")
 
 	def Run(self) -> None:
 
@@ -125,7 +238,8 @@ class Game(Application):
 						
 						tile.selected = True
 						
-						if self.infoMode:
+						if self.objects["game"]["info mode button"].status == "On":
+
 							tile.rect = tile.selectedRect
 						
 				else:
@@ -135,36 +249,34 @@ class Game(Application):
 
 	def Expand(self) -> None:
 		
-		if self.money >= self.expandCost(self.tiles.rowCount):
+		if self.money >= self.tiles.GetExpandCost():
 
-			self.money -= self.expandCost(self.tiles.rowCount)
-			self.tiles.Expand()
+			if not self.tiles.isMaxSize():
 
-			self.objects[self.tab]["expand button"].text.Update("Mouse Over", str(self.expandCost(self.tiles.rowCount)) + "$")
+				self.money -= self.tiles.GetExpandCost()
+				self.tiles.Expand()
+				self.UpdateButtonTexts()
+				self.PlaySound(self.clickSoundPath)
 	
 	def SetAge(self, ageNumber) -> None:
-			
-		self.buildings.SetAge(ageNumber)
 		
-		self.objects["game"]["build button"].text.Update("Mouse Over", str(self.buildCost(ageNumber)) + "$")
-		self.objects["game"]["next age button"].text.Update("Mouse Over", str(self.ageCost(ageNumber)) + "$")
+		if ageNumber <= self.buildings.maxAgeNumber:
+
+			self.buildings.SetAge(ageNumber)
+			self.UpdateButtonTexts()
 
 	def NextAge(self) -> None:
 
-		if self.buildings.ageNumber + 1 < len(ages) and self.money >= self.ageCost(self.buildings.ageNumber):
+		if self.buildings.ageNumber < self.buildings.maxAgeNumber and self.money >= self.buildings.GetAgeCost():
 			
+			self.money -= self.buildings.GetAgeCost()
 			self.SetAge(self.buildings.ageNumber + 1)
-			self.money -= self.ageCost(self.buildings.ageNumber)
+			self.PlaySound(self.clickSoundPath)
 
 	def HandleExitEvents(self, event) -> None:
 		
-		#-# Quit when trying to close window #-#
-		if event.type == pygame.QUIT:
-
-			self.Exit()
-
 		#-# Go back if escape button pressed #-#
-		elif event.type == pygame.KEYUP and event.key == pygame.K_ESCAPE:
+		if event.type == pygame.QUIT or (event.type == pygame.KEYUP and event.key == pygame.K_ESCAPE):
 				
 			self.PlaySound(self.goBackSoundPath)
 
@@ -178,11 +290,46 @@ class Game(Application):
 
 			elif self.tab == "game":
 
-				if self.isInfoPanelOpen:
+				if self.objects["game"]["info panel"].show:
 
-					self.isInfoPanelOpen = False
+					self.CloseInfoPanel()
 
 				else:
+					
+					#region #-# Save everything to database #-#
+
+					if self.database.Connect():
+
+						sqlCode = "UPDATE game SET age_number='"+str(self.buildings.ageNumber)+"', size='"+str(self.tiles.rowCount)+"', money='"+str(self.money)+"'"
+						self.database.Execute(sqlCode)
+						self.database.Commit()
+						self.database.Disconnect()
+
+						if self.database.Connect():
+							
+							sqlCode = "DELETE FROM buildings"
+							self.database.Execute(sqlCode)
+							self.database.Commit()
+							self.database.Disconnect()
+
+							for building in self.buildings:
+
+								if self.database.Connect():
+								
+									sqlCode = "INSERT INTO buildings(level, row, column) VALUES("+str(building.level)+", "+str(building.tile.rowNumber)+", "+str(building.tile.columnNumber)+")"
+									self.database.Execute(sqlCode)
+									self.database.Commit()
+									self.database.Disconnect()
+
+								else:
+									
+									self.Exit()
+
+						else:
+
+							self.Exit()
+
+					#endregion
 
 					self.OpenTab("menu")
 
@@ -229,101 +376,122 @@ class Game(Application):
 					self.PlaySound(self.goBackSoundPath)
 					self.Exit()
 
+		elif self.tab == "settings":
+
+			#-# Control click button events with space button #-#
+			if event.type == pygame.KEYUP:
+
+				if event.key == pygame.K_SPACE:
+
+					if self.settingsMenu.buttons[0].status == "Selected":
+
+						self.PlaySound(self.clickSoundPath)
+						self.OpenTab("menu")
+
+						self.DeleteData()
+						self.GetDatasFromDatabase()
+						self.AddObjects()
+
+					elif self.settingsMenu.buttons[1].status == "Selected":
+
+						self.PlaySound(self.clickSoundPath)
+						self.OpenTab("menu")
+
+			#-# Control click button events with mouse #-#
+			elif event.type == pygame.MOUSEBUTTONUP:
+				
+				if self.settingsMenu.buttons[0].status == "Selected":
+
+					self.PlaySound(self.clickSoundPath)
+					self.OpenTab("menu")
+
+					self.DeleteData()
+					self.GetDatasFromDatabase()
+					self.AddObjects()
+					
+				elif self.settingsMenu.buttons[1].status == "Selected":
+
+					self.PlaySound(self.clickSoundPath)
+					self.OpenTab("menu")
+
 		elif self.tab == "game":
 
-			if event.type == pygame.MOUSEMOTION:
+			#-# sell building #-#
+			if self.objects["game"]["info panel"].show:
+
+				if self.infoPanelSellButton.isMouseClick(event, self.mousePosition):
 					
-				if self.isInfoPanelOpen:
-
-					#-# Select info panel buttons if mouse over #-#
-					self.infoPanelSellButton.selected = self.infoPanelSellButton.isMouseOver(self.mousePosition)
-					self.closeInfoButtonCross.selected = self.closeInfoButton.selected = self.closeInfoButton.isMouseOver(self.mousePosition)
-
-				else:
+					self.buildings.remove(self.infoBuilding)
+					self.money += self.infoBuilding.sellPrice
+					self.CloseInfoPanel()
+					self.PlaySound(self.goBackSoundPath)
+					self.UpdateButtonTexts()
 				
-					#-# Select tile if mouse over it #-#
+				#-# close info panel #-#
+				elif self.objects["game"]["info panel close button"].isMouseClick(event, self.mousePosition):
+
+					self.CloseInfoPanel()
+					self.PlaySound(self.goBackSoundPath)
 					self.ControlSelectingTile()
+			else:
 
-			elif event.type == pygame.MOUSEBUTTONUP:
+				#-# Select tile if mouse over it #-#
+				self.ControlSelectingTile()
 
-				if self.isInfoPanelOpen:
-				
-					#-# sell building #-#
-					if self.infoPanelSellButton.selected:
-						
-						self.buildings.remove(self.infoBuilding)
-						self.money += self.infoBuilding.sellPrice
-						self.isInfoPanelOpen = False
-						self.PlaySound(self.goBackSoundPath)
+				#-# On/off info mode with clicking info mode button #-#
+				if self.objects[self.tab]["info mode button"].isMouseClick(event, self.mousePosition):
+
+					if self.objects["game"]["info mode button"].status == "On":
+
+						self.objects[self.tab]["info mode button"].SetStatus("Off")
+
+					else:
+
+						self.objects[self.tab]["info mode button"].SetStatus("On")
 					
-					#-# close info panel #-#
-					elif self.closeInfoButton.selected:
+					self.PlaySound(self.clickSoundPath)
 
-						self.isInfoPanelOpen = False
-						self.PlaySound(self.goBackSoundPath)
-				
-				else:
+				#-# Open building info if tile is clicked #-#
+				if self.objects["game"]["info mode button"].status == "On" and event.type == pygame.MOUSEBUTTONUP:
 
-					#-# On/off info mode with clicking info mode button #-#
-					if self.objects[self.tab]["info mode button"].isMouseOver(self.mousePosition):
-						
-						self.infoMode = not self.infoMode
-						
-						if self.infoMode:
+					for row in self.tiles:
 
-							self.objects[self.tab]["info mode button"].SetStatus("On")
+						for tile in row:
 
-						else:
+							if tile.selected:
 
-							self.objects[self.tab]["info mode button"].SetStatus("Off")
-						
-						self.PlaySound(self.clickSoundPath)
+								for building in self.buildings:
 
-					#-# Open building info if tile is clicked #-#
-					if self.infoMode:
+									if building.tile == tile:
 
-						for row in self.tiles:
+										self.OpenInfoPanel(building)
+										self.PlaySound(self.clickSoundPath)
 
-							for tile in row:
+										break
+								break
 
-								if tile.selected:
+				#-# expand #-#
+				if self.objects[self.tab]["expand button"].isMouseClick(event, self.mousePosition):
 
-									for building in self.buildings:
+					self.Expand()
 
-										if building.tile == tile:
+				#-# Create building if build button clicked #-#
+				elif self.objects[self.tab]["build button"].isMouseClick(event, self.mousePosition):
 
-											self.OpenBuildingInfo(building)
-											self.PlaySound(self.clickSoundPath)
+					self.CreateBuilding()
 
-											break
-									break
+				#-# Go next age #-#
+				elif self.objects[self.tab]["next age button"].isMouseClick(event, self.mousePosition):
 
-					#-# expand #-#
-					elif self.objects[self.tab]["expand button"].isMouseOver(self.mousePosition):
+					self.NextAge()
 
-						self.PlaySound(self.clickSoundPath)
-						self.Expand()
-
-					#-# Create building if build button clicked #-#
-					elif self.objects[self.tab]["build button"].isMouseOver(self.mousePosition):
-
-						self.PlaySound(self.clickSoundPath)
-						self.CreateBuilding()
-
-					#-# Go next age #-#
-					elif self.objects[self.tab]["next age button"].isMouseOver(self.mousePosition):
-
-						self.PlaySound(self.clickSoundPath)
-						self.NextAge()
-
-			elif event.type == pygame.KEYUP:
+			if event.type == pygame.KEYUP:
 
 				#-# Create/Move buildings with keys #-#
-				if not self.isInfoPanelOpen:
+				if not self.objects["game"]["info panel"].show:
 
-					if event.key == pygame.K_SPACE and not self.infoMode:
+					if event.key == pygame.K_SPACE:
 						
-						self.PlaySound(self.clickSoundPath)
 						self.CreateBuilding()
 					
 					elif event.key == pygame.K_RIGHT or event.key == pygame.K_d:
@@ -342,56 +510,47 @@ class Game(Application):
 					
 						self.MoveBuildings("down")
 
-	def OpenBuildingInfo(self, building: Building) -> None:
+	def OpenInfoPanel(self, building: Building) -> None:
 
-		self.closeInfoButton = MenuButton("red_circle", ((self.width - 250)/2 + 250 - 20, (self.height - 400)/2 - 12), selectedColor="yellow_circle")
-		self.closeInfoButtonCross = MenuButton("grey_crossWhite", (9, 9), ((self.width - 250)/2 + 250 - 20 + 9, (self.height - 400)/2 - 12 + 9), "grey_crossGrey")
-		
+		self.objects[self.tab]["info panel"].Show()
+		self.objects[self.tab]["info panel top side"].Show()
+		self.objects[self.tab]["info panel close button"].Show()
+
 		self.infoBuilding = building
-
-		self.infoPanel = Object(((self.width - 250)/2, (self.height - 400)/2), (250, 400), {"Normal" : ImagePath("grey_panel", "gui")})
-
-		self.infoPanelTopSide = pygame.Surface((250, 300), pygame.SRCALPHA)
-
-		buildingImage = Object((20, 20), (65, 89), {"Normal" : building.GetImagePath()})
+		
 		levelText = self.infoPanelTextFont.render("Level: " + str(building.level), True, Gray)
 		speedText = self.infoPanelTextFont.render("Speed: " + str(building.speed) + " $/sec", True, Gray)
 		cooldownText = self.infoPanelTextFont.render("Cooldown: " + str(building.cooldown) + " sec", True, Gray)
 		sellPriceText = self.infoPanelTextFont.render("Sell Price: " + str(building.sellPrice), True, Gray)
 		
-		self.infoPanelTopSide.blit(levelText, (90, 35))
-		self.infoPanelTopSide.blit(speedText, (90, 50))
-		self.infoPanelTopSide.blit(cooldownText, (90, 65))
-		self.infoPanelTopSide.blit(sellPriceText, (90, 80))
-		buildingImage.Draw(self.infoPanelTopSide)
+		self.objects["game"]["info panel top side"].AddSurface("Normal", pygame.Surface((250, 300), pygame.SRCALPHA))
+		self.objects["game"]["info panel top side"].surfaces["Normal"].blit(levelText, (90, 35))
+		self.objects["game"]["info panel top side"].surfaces["Normal"].blit(speedText, (90, 50))
+		self.objects["game"]["info panel top side"].surfaces["Normal"].blit(cooldownText, (90, 65))
+		self.objects["game"]["info panel top side"].surfaces["Normal"].blit(sellPriceText, (90, 80))
+		self.objects["game"]["info panel top side"].surfaces["Normal"].blit(Images(building.GetImagePath(), (65, 89)), (20, 20))
 
-		self.infoPanelSellButton = MenuButton("red", (20, 325), ((self.width - 250)/2 + 20, (self.height - 400)/2 + 325), "yellow", "SELL", "+" + str(building.sellPrice) + "$", White, Gray, None, None, (75, 10), (73, 15), 35, self.fontPath, (210, 50), (210, 60))
 		self.infoPanelSellButton = Button(((self.width - 250)/2 + 20, (self.height - 400)/2 + 325), (210, 50), {"Normal" : ImagePath("green", "gui"), "Mouse Over" : ImagePath("red", "gui")}, "SELL", str(building.sellPrice) + "$", 25)
-		self.isInfoPanelOpen = True
-
-		#self.infoPanel.ReblitImage()
-		self.infoPanel.surfaces["Normal"].blit(self.infoPanelTopSide, (0, 0))
 		self.AddObject("game", "info panel sell button", self.infoPanelSellButton)
 
-		self.infoPanel.Draw(self.window)
-		self.AddObject("game", "info panel", self.infoPanel)
+	def CloseInfoPanel(self):
 
-		#self.closeInfoButtonCross.Draw(self.closeInfoButton.surfaces["Normal"])
-		#self.closeInfoButtonCross.Draw(self.closeInfoButton.surfaces["Normal"])
-
-		self.closeInfoButton.Draw(self.window)
-		self.AddObject("game", "close info button", self.closeInfoButton)
+		self.objects[self.tab]["info panel"].Hide()
+		self.objects[self.tab]["info panel top side"].Hide()
+		self.objects[self.tab]["info panel close button"].Hide()
+		self.objects[self.tab]["info panel sell button"].Hide()
 
 	def MoveBuildings(self, rotation: str) -> None:
 
 		isBuildingsMoving = False
 
 		for building in self.buildings:
+			
 			if not building.velocity == Vector2(0, 0):
 				isBuildingsMoving = True
 				break
 
-		if not self.infoMode and not isBuildingsMoving:
+		if self.objects["game"]["info mode button"].status == "Off" and not isBuildingsMoving:
 
 			if rotation == "up" or rotation == "down":
                 
@@ -511,45 +670,62 @@ class Game(Application):
 
 			self.buildings.sort(key=lambda building: building.tile.columnNumber)
 
+	def AddBuilding(self, level, rowNumber, columnNumber):
+
+		newBuilding = Building(level, self.buildings.ageNumber, self.tiles[rowNumber - 1][columnNumber - 1])
+		self.buildings.append(newBuilding)
+		self.buildings.sort(key=lambda building: building.tile.columnNumber)
+
+		if len(self.buildings) == self.tiles.rowCount*self.tiles.columnCount and "game" in self.objects and "build button" in self.objects["game"]:
+
+			self.objects["game"]["build button"].text.UpdateText("Mouse Over", "TILES ARE FULL")
+			self.objects["game"]["build button"].text.UpdateSize("Mouse Over", 17)
+		
 	def CreateBuilding(self) -> None:
+
+		#region Control of buildings are moving
 
 		isBuildingsMoving = False
 
 		for building in self.buildings:
+
 			if not building.velocity == Vector2(0, 0):
+
 				isBuildingsMoving = True
+
 				break
 
-		if not isBuildingsMoving and self.money >= self.buildCost(self.buildings.ageNumber): #and not self.infoMode
+		#endregion
 
-			try:
+		if not isBuildingsMoving and self.money >= self.buildings.GetBuildCost():
+
+			#region Get Empty Tiles
+
+			emptyTiles = []
+			
+			for rowNumber in range(self.tiles.rowCount):
+
+				for columnNumber in range(self.tiles.columnCount):
+
+					emptyTiles.append((rowNumber + 1, columnNumber + 1))
+
+
+			for building in self.buildings:
+				emptyTiles.remove((building.tile.rowNumber, building.tile.columnNumber))
+
+			#endregion
+
+			if len(emptyTiles) > 0:
 				
-				emptyTiles = []
+				rowNumber, columnNumber = choice(emptyTiles)
+
+				self.AddBuilding(1, rowNumber, columnNumber)
+				self.money -= self.buildings.GetBuildCost()
+				self.PlaySound(self.clickSoundPath)
 				
-				for rowNumber in range(self.tiles.rowCount):
-					for columnNumber in range(self.tiles.columnCount):
-						emptyTiles.append((rowNumber + 1, columnNumber + 1))
+			else:
 
-
-				for building in self.buildings:
-					emptyTiles.remove((building.tile.rowNumber, building.tile.columnNumber))
-
-
-				if len(emptyTiles) > 0:
-					
-					rowNumber, columnNumber = choice(emptyTiles)
-
-					newBuilding = Building(1, self.buildings.ageNumber, self.tiles[rowNumber - 1][columnNumber - 1])
-					self.buildings.append(newBuilding)
-					self.buildings.sort(key=lambda building: building.tile.columnNumber)
-					self.money -= self.buildCost(self.buildings.ageNumber)
-					
-				else:
-					pass # not enough space error
-
-			except NameError as error:
-
-				print("You need to create tiles before creating new building! lol")
+				pass # not enough space
 	
 	def OpenTab(self, tab: str) -> None:
 
@@ -587,7 +763,7 @@ class Game(Application):
 				building.lastTime = pygame.time.get_ticks()
 
 		#-# Money Text #-#
-		self.objects[self.tab]["money text"].Update("Normal", str(self.money) + "$")
+		self.objects[self.tab]["money text"].UpdateText("Normal", str(self.money) + "$")
 
 	def Draw(self) -> None:
 		

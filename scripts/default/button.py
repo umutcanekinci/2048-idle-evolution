@@ -26,11 +26,11 @@ class Buttonxx(Object):
 			surfaceSize: tuple = None,
 			show = True
 			):
-		
-		super().__init__(position, size, {}, surfaceSize, show)
+
+		super().__init__(position, size, {}, surfaceSize, None, show)
 		
 		#-# Button Proporties #-#
-		self.Rect = pygame.Rect(self.position[0] - CornerRadius, self.position[1] - CornerRadius, self.size[0] + CornerRadius*2, self.size[1] + CornerRadius*2)
+		self.rect = pygame.Rect(self.position[0] - CornerRadius, self.position[1] - CornerRadius, self.size[0] + CornerRadius*2, self.size[1] + CornerRadius*2)
 		self.Color, self.ActiveColor, self.CornerRadius, self.BorderSize, self.BorderColor = pygame.Color(Color), pygame.Color(ActiveColor), CornerRadius, BorderSize, pygame.Color(BorderColor)
 
 		#-# Text And Font Proporties #-#
@@ -43,19 +43,21 @@ class Buttonxx(Object):
 		#-# Sides #-#
 		self.FontSide = self.GetSide(FontSide, self.Text.get_size(), FontMargin)
 		if self.IconPath != None: self.IconSide = self.GetSide(IconSide, IconSize, IconMargin)
+
 		#-# Creating Button #-#
-		self.Surface = pygame.Surface(self.Rect.size, pygame.SRCALPHA)
+		self.Surface = pygame.Surface(self.rect.size, pygame.SRCALPHA)
 		self.MouseOverSurface = self.Surface.copy()
 		
-		
-		pygame.draw.rect(self.Surface, self.Color, ((0, 0), self.Rect.size), 0, self.CornerRadius)
-		pygame.draw.rect(self.MouseOverSurface, self.ActiveColor, ((0, 0), self.Rect.size), 0, self.CornerRadius)
+		pygame.draw.rect(self.Surface, self.Color, ((0, 0), self.rect.size), 0, self.CornerRadius)
+		pygame.draw.rect(self.MouseOverSurface, self.ActiveColor, ((0, 0), self.rect.size), 0, self.CornerRadius)
 		
 		if self.BorderSize > 0:
-			pygame.draw.rect(self.Surface, self.BorderColor, ((0, 0), (self.Rect.width - self.BorderSize, self.Rect.height - self.BorderSize)), self.BorderSize, self.CornerRadius)
-			pygame.draw.rect(self.MouseOverSurface, self.BorderColor, ((0, 0), (self.Rect.width - self.BorderSize, self.Rect.height - self.BorderSize)), self.BorderSize, self.CornerRadius)
+
+			pygame.draw.rect(self.Surface, self.BorderColor, ((0, 0), (self.rect.width - self.BorderSize, self.rect.height - self.BorderSize)), self.BorderSize, self.CornerRadius)
+			pygame.draw.rect(self.MouseOverSurface, self.BorderColor, ((0, 0), (self.rect.width - self.BorderSize, self.rect.height - self.BorderSize)), self.BorderSize, self.CornerRadius)
 			
 		if self.IconPath != None:
+
 			Images((self.IconSide, self.IconSize), self.IconPath).Draw(self.Surface)
 			Images((self.IconSide, self.IconSize), self.IconPath).Draw(self.MouseOverSurface)
 		
@@ -65,20 +67,23 @@ class Buttonxx(Object):
 		self.ActiveSurface = self.Surface.copy()
 		self.MouseOverActiveSurface = self.MouseOverSurface.copy()
 		
-		pygame.draw.rect(self.ActiveSurface, self.FontColor, ((0, 0), self.Rect.size), 1, self.CornerRadius)		
-		pygame.draw.rect(self.MouseOverActiveSurface, self.FontColor, ((0, 0), self.Rect.size), 1, self.CornerRadius)
+		pygame.draw.rect(self.ActiveSurface, self.FontColor, ((0, 0), self.rect.size), 1, self.CornerRadius)		
+		pygame.draw.rect(self.MouseOverActiveSurface, self.FontColor, ((0, 0), self.rect.size), 1, self.CornerRadius)
 		
-		self.Active, self.Style = False, "Normal"
+		self.Active, self.status = False, "Normal"
+
+		self.AddSurface("active", self.ActiveSurface)
+		self.AddSurface("Normal", self.Surface)
 
 	def GetSide(self, Side, Size, Margin):
 
 		#-# Sides #-#
 		self.Left = self.BorderSize + Margin
-		self.CenterX = (self.Rect.width - Size[0])/2
-		self.Right = self.Rect.width - Size[0] - self.BorderSize - Margin
+		self.CenterX = (self.rect.width - Size[0])/2
+		self.Right = self.rect.width - Size[0] - self.BorderSize - Margin
 		self.Top = self.BorderSize + Margin
-		self.CenterY = (self.Rect.height - Size[1])/2
-		self.Bottom = self.Rect.height - Size[1] - self.BorderSize - Margin
+		self.CenterY = (self.rect.height - Size[1])/2
+		self.Bottom = self.rect.height - Size[1] - self.BorderSize - Margin
 
 		return {"TopLeft" : (self.Left, self.Top),
 		 "TopCenter" : (self.CenterX, self.Top),
@@ -90,28 +95,31 @@ class Buttonxx(Object):
 		 "BottomCenter" : (self.CenterX, self.Bottom),
 		 "BottomCenter" : (self.Right, self.Bottom)}.get(Side)
 
-	def HandleEvent(self, Event, MousePosition):
+	def HandleEvents(self, event, MousePosition):
 
 		if self.isMouseOver(MousePosition):
 			
-			self.Style = "MouseOverActive" if self.Style == "Active" else "MouseOver"		
+			self.status = "MouseOverActive" if self.status == "Active" else "MouseOver"
+
 		else:
 			
-			self.Style = "Active" if self.Style == "MouseOverActive" else "Normal"		
+			self.status = "Active" if self.status == "MouseOverActive" else "Normal"		
 			
-		if Event.type == pygame.MOUSEBUTTONUP:
+		if event.type == pygame.MOUSEBUTTONUP:
 			
-			self.Style = "Normal"
+			self.status = "Normal"
 
-		if self.isMouseClick(Event, MousePosition):
+		if self.isMouseClick(event, MousePosition):
 			
-			self.Style = "MouseOverActive" if self.Style == "MouseOver" else "MouseOver"
+			self.status = "MouseOverActive" if self.status == "MouseOver" else "MouseOver"
 
 	def Draw(self, surface):
 
 		if self.show:
 
-			if self.Style == "Normal": surface.blit(self.Surface, self.Rect)
-			elif self.Style == "Active": surface.blit(self.ActiveSurface, self.Rect)
-			elif self.Style == "MouseOver": surface.blit(self.MouseOverSurface, [self.Rect.x, self.Rect.y - 5])		
-			elif self.Style == "MouseOverActive": surface.blit(self.MouseOverActiveSurface, [self.Rect.x, self.Rect.y - 5])
+			if self.status == "Normal" or self.status == "Active":
+				
+				surface.blit(self.surfaces[self.status], self.rect)
+
+			elif self.status == "MouseOver": surface.blit(self.MouseOverSurface, [self.rect.x, self.rect.y - 5])		
+			elif self.status == "MouseOverActive": surface.blit(self.MouseOverActiveSurface, [self.rect.x, self.rect.y - 5])

@@ -13,12 +13,12 @@ class Menu(pygame.Surface):
             titleImagePath: FilePath,
             titleSize: tuple,
             titleText: str,
+            titleTextSize: int,
             titleTextColor: tuple,
-            titleTextFont: pygame.font.Font,
+            titleFontPath: FontPath,
             titleTextPosition: tuple,
 
             buttonPanelImagePath: FilePath,
-            buttonCount: int,
             buttonSize: tuple,
             buttonColor: tuple,
             buttonSelectedColor,
@@ -32,7 +32,8 @@ class Menu(pygame.Surface):
 
         space = 20 # space between objects
         buttonAdditionalSize = 15
-
+        buttonCount = len(buttonTexts)
+        
         self.position = pygame.math.Vector2(position)
         
         #-# Sound Paths #-#
@@ -40,29 +41,27 @@ class Menu(pygame.Surface):
         self.switchDownSoundPath = SoundPath("switchDown")
 
         #-# Title #-#
-        self.title = Object((0, 0), titleSize, {"Normal" : titleImagePath}, screenPosition=self.position)
-        self.titleText = titleTextFont.render(titleText, False, titleTextColor)
-        self.title.surfaces["Normal"].blit(self.titleText, titleTextPosition)
+        self.title = Object(self.position, titleSize, {"Normal" : titleImagePath})
+        self.titleText = Text(titleTextPosition, titleText, titleTextSize, False, titleTextColor, None, titleFontPath, isCentered=False)
+        self.titleText.Draw(self.title.surfaces["Normal"])
 
         #-# Button Panel #-#
         self.buttonPanelSize = [buttonSize[0] + space * 2, buttonSize[1]*buttonCount + (buttonCount + 3)*space]
-        self.buttonPanelPosition = 0, titleSize[1] - space/2
+        self.buttonPanelPosition = self.position[0], self.position[1] + titleSize[1] - space/2
+
         self.buttonPanel = Object(self.buttonPanelPosition, self.buttonPanelSize, {"Normal" : buttonPanelImagePath})
         
         #-# Buttons #-#
         buttonSelectedSize = buttonSize[0], buttonSize[1] + buttonAdditionalSize
         self.buttons = []
-
+        
         for i in range(buttonCount):
 
             buttonPosition = pygame.math.Vector2(space, space*(i+3/2) + buttonSize[1]*i)
-            buttonScreenPosition = buttonPosition + self.buttonPanelPosition + self.position
+            buttonScreenPosition = buttonPosition + self.buttonPanelPosition
             
-            self.buttons.append(MenuButton(buttonColor, buttonPosition, buttonScreenPosition, buttonSelectedColor, buttonTexts[i], buttonTexts[i], buttonTextColor, buttonSelectedTextColor
+            self.buttons.append(MenuButton(buttonColor, buttonScreenPosition, buttonSelectedColor, buttonTexts[i], buttonTexts[i], buttonTextColor, buttonSelectedTextColor
                                 , buttonTextSize, buttonTextFontName, buttonSize, buttonSelectedSize))
-
-
-            #self.buttons.append(Button(buttonPosition, buttonSize, {"Selected" : ImagePath("blue", "gui"), "Unselected" : ImagePath("yellow", "gui")}, buttonTexts[i], buttonTexts[i], 25))
 
         if buttonCount > 0:
 
@@ -129,13 +128,14 @@ class Menu(pygame.Surface):
 
     def Draw(self, surface: pygame.Surface) -> None:
 
-        self.title.Draw(self)
-        self.buttonPanel = Object(self.buttonPanel.position, self.buttonPanel.size, self.buttonPanel.imagePaths)
-
+        surface.blit(self, self.position)
+        self.title.Draw(surface)
+        self.buttonPanel.Draw(surface)
+        
         for button in self.buttons:
 
-            button.Draw(self.buttonPanel.surfaces["Normal"])
+            button.Draw(surface)
 
-        self.buttonPanel.Draw(self)
+        
 
-        surface.blit(self, self.position)
+        

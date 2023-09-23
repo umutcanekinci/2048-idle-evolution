@@ -5,19 +5,29 @@ from scripts.default.color import *
 
 class Text(Object):
 
-    def __init__(self, position, text, textSize, antialias=True, color=White, backgorundColor=None, fontPath = None, isCentered=True) -> None:
+    def __init__(self, position, text, textSize, antialias=True, color=White, backgroundColor=None, fontPath = None, isCentered=True, status="Normal") -> None:
         
-        
-        self.position, self.text, self.textSize, self.antialias, self.color, self.backgroundColor, self.fontPath = position, text, textSize, antialias, color, backgorundColor, fontPath
+        self.position = position
         self.isCentered = isCentered
-
+        self.textArgs = {}
+        
         super().__init__(position)
 
-        self.Update("Normal", self.text)
+        self.AddText(status, text, textSize, antialias, color, backgroundColor, fontPath)
 
-    def Update(self, status, text) -> None:
+    def AddText(self, status, text, textSize, antialias=True, color=White, backgroundColor=None, fontPath=None):
 
-        self.AddText(status, text, self.textSize, self.antialias, self.color, self.backgroundColor, self.fontPath)
+        super().AddText(status, text, textSize, antialias, color, backgroundColor, fontPath)
+        
+        self.textArgs[status] = [text, textSize, antialias, color, backgroundColor, fontPath]
+
+    def UpdateText(self, status, text) -> None:
+
+        self.AddText(status, text, *self.textArgs[status][1:])
+
+    def UpdateSize(self, status, size: int) -> None:
+
+        self.AddText(status, self.textArgs[status][0], size, *self.textArgs[status][2:])
 
     def SetStatus(self, status: str, surfacePosition = (0, 0), surfaceSize = (0, 0)):
         

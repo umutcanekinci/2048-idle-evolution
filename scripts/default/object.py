@@ -18,6 +18,7 @@ class Object(object):
 
 		self.SetSize(size)
 		self.SetPosition(position)
+
 		self.SetScreenPosition(screenPosition)
 
 	def AddText(self, status, text, textSize, antialias=True, color=White, backgroundColor=None, fontPath = None):

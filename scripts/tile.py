@@ -10,7 +10,7 @@ class Tile(object):
 
 		self.rowNumber, self.columnNumber = rowNumber, columnNumber
 		
-		self.position = self.x, self.y = self.RowNumberAndColumnNumberToPosition(self.rowNumber, self.columnNumber)
+		self.position = self.x, self.y = self.GetPosition(self.rowNumber, self.columnNumber)
 		self.image = Object(self.position, (0, 0), {"Normal" : ImagePath("tile")})
 		
 		self.selected = False
@@ -50,10 +50,10 @@ class Tile(object):
 		self.cornersOfSelectedPolygon[2] = self.cornersOfSelectedPolygon[2][0], self.cornersOfSelectedPolygon[2][1] - self.y + self.selectedRect.y
 		self.cornersOfSelectedPolygon[3] = self.cornersOfSelectedPolygon[3][0], self.cornersOfSelectedPolygon[3][1] - self.y + self.selectedRect.y
 
-	def RowNumberAndColumnNumberToPosition(self, row, column) -> tuple:
+	def GetPosition(self, row, column) -> tuple:
 		
 		x = (column-row)*65 + 655
-		y = (column+row)*32 + 258
+		y = (column+row)*32 + 200
 
 		return x, y
 
@@ -127,12 +127,20 @@ class Tiles(list[Tile]):
 				
 		return False
 
+	def GetExpandCost(self):
+		
+		return (self.rowCount + 1) * 100
+
 	def Expand(self):
 
-		if self.rowCount < self.maxRowCount and self.columnCount < self.maxColumnCount:
+		if not self.isMaxSize():
 
 			self.size = self.rowCount, self.columnCount = self.rowCount + 1, self.columnCount + 1
 			self.Create()
+
+	def isMaxSize(self) -> bool:
+
+		return (self.rowCount == self.maxRowCount) or (self.columnCount == self.maxColumnCount)
 
 	def ExpandRows(self):
 

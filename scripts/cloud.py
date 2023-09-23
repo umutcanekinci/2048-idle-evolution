@@ -9,8 +9,8 @@ class Cloud(Object):
         x = random.randint(0, surfaceSize[0] - 101)
         y = random.randint(0, surfaceSize[1] - 101)
         
-        self.SetVelocity((random.choice([1/2, 1/3, 1/4, 1/5,-1/2, -1/3, -1/4, -1/5]), 0))
-
+        self.SetVelocity((random.choice([1/6, 1/7, 1/8, 1/9, 1/10, 1/11, 1/12, -1/6, -1/7, -1/8 -1/9, -1/10, -1/11 -1/12]), 0))
+        
         super().__init__((x, y), size, {"Normal" : imagePath})
 
 class GameClouds(list[Cloud]):

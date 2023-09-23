@@ -1,5 +1,4 @@
 #-# Import Packages #-#
-import pygame
 from images import *
 from scripts.tile import *
 
@@ -48,14 +47,6 @@ class Building(Object):
         self.unselectedPosition = Vector2(x, y)
         self.selectedPosition = Vector2(x, y - 10)
 
-    def __Move(self) -> None:
-
-        if (self.targetPosition.x < self.position.x < self.targetPosition.x + self.velocity.x or self.targetPosition.x > self.position.x > self.targetPosition.x + self.velocity.x) and (self.targetPosition.y < self.position.y < self.targetPosition.y + self.velocity.y or self.targetPosition.y > self.position.y > self.targetPosition.y + self.velocity.y):
-            
-            self.velocity = Vector2(0, 0)
-
-        self.position += self.velocity
-
     def SetTargetTile(self, targetTile: Tile) -> None:
 
         self.tile = targetTile
@@ -69,55 +60,72 @@ class Building(Object):
         sacrificialBuilding.Destroy(self)
 
     def Destroy(self, newBuilding) -> None:
+        
         self.newBuilding = newBuilding
         self.destroy = True
 
-    def Draw(self, surface: pygame.Surface, buildings: list ={}) -> None:
-        
-        if self.velocity == Vector2(0, 0):
-
-            if self.destroy:
-
-                buildings.remove(self)
-                buildings.remove(self.newBuilding)
-                buildings.append(Building(self.level + 1, self.ageNumber, self.tile))
-                buildings.sort(key=lambda building: building.tile.columnNumber)
-
-            else:
-
-                if self.tile.selected and self.tile.rect == self.tile.selectedRect:
-
-                    self.position = self.selectedPosition
-
-                else:
-
-                    self.position = self.unselectedPosition
-        else:
-
-            self.__Move()
-        
-        super().Draw(surface)
 
 class Buildings(list[Building]):
 
     def __init__(self) -> None:
 
+        self.maxAgeNumber = len(ages) - 1
+
         super().__init__()
 
     def SetAge(self, ageNumber):
 
-        self.ageNumber = ageNumber
+        if ageNumber <= self.maxAgeNumber:
 
-        for i, building in enumerate(self):
+            self.ageNumber = ageNumber
 
-            self[i] = Building(building.level, self.ageNumber, building.tile)
+            for i, building in enumerate(self):
+
+                self[i] = Building(building.level, self.ageNumber, building.tile)
+
+    def GetAgeCost(self):
+
+        return (self.ageNumber + 1) * 1000
+
+    def GetBuildCost(self):
+
+        return (self.ageNumber + 1) * 100
 
     def HandleEvents(self, event, mousePosition) -> None:
 
         pass
 
+    def ControlMoving(self):
+
+        for building in self:
+
+            if building.velocity == Vector2(0, 0):
+
+                if building.destroy:
+
+                    self.remove(building)
+                    self.remove(building.newBuilding)
+                    self.append(Building(building.level + 1, building.ageNumber, building.tile))
+                    self.sort(key=lambda building: building.tile.columnNumber)
+
+                else:
+
+                    if building.tile.selected and building.tile.rect == building.tile.selectedRect:
+
+                        building.position = building.selectedPosition
+
+                    else:
+
+                        building.position = building.unselectedPosition
+            else:
+
+                if (building.targetPosition.x < building.position.x < building.targetPosition.x + building.velocity.x or building.targetPosition.x > building.position.x > building.targetPosition.x + building.velocity.x) and (building.targetPosition.y < building.position.y < building.targetPosition.y + building.velocity.y or building.targetPosition.y > building.position.y > building.targetPosition.y + building.velocity.y):
+            
+                    building.velocity = Vector2(0, 0)
+
     def Draw(self, surface):
 
         for building in self:
 
+            self.ControlMoving()
             building.Draw(surface)
